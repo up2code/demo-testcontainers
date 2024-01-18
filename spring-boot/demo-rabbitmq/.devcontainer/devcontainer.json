@@ -1,0 +1,19 @@
+{
+  "name": "demo-rabbitmq-devcon",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "customizations": {
+		"vscode": {
+			"extensions": [
+				"vmware.vscode-boot-dev-pack",
+				"esbenp.prettier-vscode"
+			]
+		}
+	},
+  "forwardPorts": [8080,15672,5672],
+  "postCreateCommand": "java --version",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  }
+}

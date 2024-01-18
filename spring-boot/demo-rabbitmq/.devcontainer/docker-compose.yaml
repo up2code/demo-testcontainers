@@ -1,0 +1,37 @@
+version: '3.8'  # Specify a compatible Docker Compose version
+
+networks:
+  local_network:
+    driver: bridge
+
+services:
+  app:
+    container_name: demo-rabbitmq-devcon
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_USER: user
+      RABBITMQ_PASSWORD: password
+    command: sleep infinity
+    volumes:
+      - ../..:/workspaces:cached
+    networks:
+      - local_network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine  # Use a lightweight image with management UI
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # Map the AMQP port
+      - "15672:15672"  # Map the management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq  # Persistent data storage
+      - ./rabbitmq/definitions.json:/tmp/rabbit.definitions.json
+    environment:
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management load_definitions "/tmp/rabbit.definitions.json"
+    networks:
+      - local_network
+
+volumes:
+  rabbitmq_data:  # Define a named volume for RabbitMQ data
