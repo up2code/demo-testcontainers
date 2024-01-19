@@ -46,6 +46,25 @@
       "arguments": {}
     }
   ],
-  "exchanges": [],
-  "bindings": []
+  "exchanges": [
+    {
+      "name": "test-exchange",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "test-exchange",
+      "vhost": "/",
+      "destination": "test-queue",
+      "destination_type": "queue",
+      "routing_key": "x.y.z",
+      "arguments": {}
+    }
+  ]
 }

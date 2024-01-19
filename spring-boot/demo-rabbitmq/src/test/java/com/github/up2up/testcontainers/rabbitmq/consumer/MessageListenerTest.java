@@ -1,5 +1,6 @@
 package com.github.up2up.testcontainers.rabbitmq.consumer;
 
+import com.rabbitmq.client.ConnectionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -30,6 +31,7 @@ public class MessageListenerTest {
 //            .withQueue("test-queue") // Deprecated
             .withCopyFileToContainer(MountableFile.forClasspathResource("definitions.json"), "/tmp/rabbit.definitions.json")
             .withEnv("RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS", "-rabbitmq_management load_definitions \"/tmp/rabbit.definitions.json\"")
+            .withLogConsumer(frame -> System.out.print(new String(frame.getBytes()))) // Log output to console
             ;
 
     @Autowired
@@ -43,12 +45,61 @@ public class MessageListenerTest {
         registry.add("spring.rabbitmq.password", container::getAdminPassword);
     }
 
+    private ConnectionFactory createConnectionFactory() {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost(container.getHost());
+        factory.setPort(container.getAmqpPort());
+        factory.setUsername(container.getAdminUsername());
+        factory.setPassword(container.getAdminPassword());
+        return factory;
+    }
+
     @Test
-    void testReceiveMessage(CapturedOutput output) {
+    void testVerifyQueueExists() {
+        ConnectionFactory factory = createConnectionFactory();
+
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            try(var connection = factory.newConnection()) {
+                assertThat(connection.createChannel()
+                        .queueDeclarePassive("test-queue")
+                        .getQueue())
+                        .isNotNull();
+            }
+        });
+    }
+
+    @Test
+    void testVerifyExchangeExists() {
+        ConnectionFactory factory = createConnectionFactory();
+
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            try(var connection = factory.newConnection()) {
+                assertThat(connection.createChannel()
+                        .exchangeDeclarePassive("test-exchange"))
+                        .isNotNull();
+            }
+        });
+    }
+
+    @Test
+    void testReceiveMessageDirectlyToQueue(CapturedOutput output) {
         String message = "test-something";
         String testQueue = "test-queue";
 
         rabbitTemplate.convertAndSend(testQueue, message);
+
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            assertThat( output.getOut()).contains("test-something");
+        });
+    }
+
+    @Test
+    void testReceiveMessageWhenPublishToExchange(CapturedOutput output) {
+        String message = "test-something";
+        String exchange = "test-exchange";
+        String rouutingKey = "x.y.z";
+
+        rabbitTemplate.convertAndSend(exchange, rouutingKey, message);
 
         await().atMost(5, SECONDS).untilAsserted(() -> {
             assertThat( output.getOut()).contains("test-something");
