@@ -22,12 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Testcontainers
 public class BookRepositoryTest {
+
     @Container
-    public static final GenericContainer<?> container = new GenericContainer<>(
-            DockerImageName.parse("mongo:7.0.5"))
-            .withExposedPorts(27017)
-            .withCopyFileToContainer(MountableFile.forClasspathResource("init.js"), "/docker-entrypoint-initdb.d/init-script.js")
-            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+    public static MongoDBContainer container = new MongoDBContainer("mongo:latest")
+            .withLogConsumer(outputFrame -> System.out.println("[Testcontainers:MongoDB] " + new String(outputFrame.getUtf8String())))
+            .withCopyFileToContainer(MountableFile.forClasspathResource("init.js"), "/docker-entrypoint-initdb.d/init-script.js");
             ;
 
     @Autowired
